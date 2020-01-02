@@ -48,19 +48,11 @@ class TelnetSocket {
     async readString(overtime?: number) {
         return (await this.readBuffer(overtime)).toString()
     }
-    async readStringMatch(regExp: RegExp): Promise<RegExpMatchArray>
-    async readStringMatch(regExp: RegExp, getIndex: number): Promise<string>
-    async readStringMatch(...avgs: any[]) {
-        const regExp = avgs[0]
-        const getIndex = avgs[1]
-        const str = await this.readString()
+    async readStringMatch(regExp: RegExp, getIndex: number, overtime?: number) {
+        const str = await this.readString(overtime)
         const match = str.match(regExp)
         if (match) {
-            if (getIndex) {
-                return match[getIndex]
-            } else {
-                return match
-            }
+            return match
         } else {
             throw new Error(`使用 /${regExp.source}/${regExp.flags} 匹配文本失败: ${str}`)
         }

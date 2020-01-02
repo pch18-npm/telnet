@@ -1,13 +1,16 @@
 {
   "name": "@pch18/telnet",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "",
   "main": "index.js",
+  "scripts": {
+    "test": "ts-node index.ts",
+    "start": "node index.js",
+    "prepublish": "tsc",
+    "postpublish": "read -p '请输入git提交信息: ' K && git add . && git commit -m \"${K}\" && git push origin master"
+  },
   "dependencies": {},
   "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "pch18 <pch18@qq.com> (https://pch18.cn/)",
   "license": "ISC",
   "repository": {

@@ -9,8 +9,7 @@ declare class TelnetSocket {
     readBuffer(overtime?: number): Promise<Buffer>;
     writeString(data: string, lineFeed?: boolean): Promise<void>;
     readString(overtime?: number): Promise<string>;
-    readStringMatch(regExp: RegExp): Promise<RegExpMatchArray>;
-    readStringMatch(regExp: RegExp, getIndex: number): Promise<string>;
+    readStringMatch(regExp: RegExp, getIndex: number, overtime?: number): Promise<RegExpMatchArray>;
     readBufferUntil(find_str: string): Promise<Buffer>;
     readStringUntil(find_str: string): Promise<string>;
 }

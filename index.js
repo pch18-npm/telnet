@@ -61,19 +61,12 @@ class TelnetSocket {
             return (yield this.readBuffer(overtime)).toString();
         });
     }
-    readStringMatch(...avgs) {
+    readStringMatch(regExp, getIndex, overtime) {
         return __awaiter(this, void 0, void 0, function* () {
-            const regExp = avgs[0];
-            const getIndex = avgs[1];
-            const str = yield this.readString();
+            const str = yield this.readString(overtime);
             const match = str.match(regExp);
             if (match) {
-                if (getIndex) {
-                    return match[getIndex];
-                }
-                else {
-                    return match;
-                }
+                return match;
             }
             else {
                 throw new Error(`使用 /${regExp.source}/${regExp.flags} 匹配文本失败: ${str}`);
