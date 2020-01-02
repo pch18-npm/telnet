@@ -21,21 +21,32 @@ class TelnetSocket {
             this.netSocket.write(data, resolve_callback)
         })
     }
-    readBuffer() {
+    readBuffer(overtime = 10000) {
         return new Promise<Buffer>((resolve, reject) => {
+            const overtime_timer = setTimeout(() => {
+                this.netSocket.removeListener('error', reject)
+                this.netSocket.removeListener('data', reject)
+                reject(new Error('等待流信息超时'))
+            }, overtime)
             const resolve_callback = (data: Buffer) => {
                 this.netSocket.removeListener('error', reject)
+                clearTimeout(overtime_timer)
                 resolve(data)
             }
-            this.netSocket.once('error', reject)
+            const reject_callback = (reason?: any) => {
+                this.netSocket.removeListener('data', reject)
+                clearTimeout(overtime_timer)
+                reject(reason)
+            }
+            this.netSocket.once('error', reject_callback)
             this.netSocket.once('data', resolve_callback)
         })
     }
     async writeString(data: string, lineFeed = true) {
         return await this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data))
     }
-    async readString() {
-        return (await this.readBuffer()).toString()
+    async readString(overtime?: number) {
+        return (await this.readBuffer(overtime)).toString()
     }
     async readStringMatch(regExp: RegExp): Promise<RegExpMatchArray>
     async readStringMatch(regExp: RegExp, getIndex: number): Promise<string>
@@ -54,25 +65,31 @@ class TelnetSocket {
             throw new Error(`使用 /${regExp.source}/${regExp.flags} 匹配文本失败: ${str}`)
         }
     }
-    async readUntil(find_str: string) {
-        const find_bf = Buffer.from(find_str)
-        let new_bf = await this.readBuffer()
-        let all_bf = new_bf
-        while (!all_bf.includes(find_bf, find_bf.length * -2)) {
-            new_bf = await this.readBuffer()
-            all_bf = Buffer.concat([all_bf, new_bf]);
+    async readBufferUntil(find_str: string) {
+        const find_buf = Buffer.from(find_str)
+        let new_buf = await this.readBuffer()
+        let all_buf = new_buf
+        while (!all_buf.includes(find_buf, find_buf.length * -2)) {
+            new_buf = await this.readBuffer()
+            all_buf = Buffer.concat([all_buf, new_buf]);
         }
-        return all_bf
+        return all_buf
+    }
+    async readStringUntil(find_str: string) {
+        const read_buf = await this.readBufferUntil(find_str)
+        return read_buf.toString()
     }
 
 }
+
 
 export class TelnetServer {
     private netServer: net.Server
     private config = {
         showLog: false
     }
-    constructor(port: number, callback: (telnetSocket: TelnetSocket, netSocket: net.Socket) => Promise<void>) {
+    constructor(port: number, config: Partial<TelnetServer['config']>, callback: (telnetSocket: TelnetSocket, netSocket: net.Socket) => Promise<void>) {
+        Object.assign(this.config, config)
         this.netServer = net.createServer((netSocket: net.Socket) => {
             this.config.showLog && console.log(`收到新的连接 ${netSocket.remoteAddress}:${netSocket.remotePort}`)
             netSocket.on('error', () => {

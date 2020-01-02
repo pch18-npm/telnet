@@ -30,13 +30,24 @@ class TelnetSocket {
             this.netSocket.write(data, resolve_callback);
         });
     }
-    readBuffer() {
+    readBuffer(overtime = 10000) {
         return new Promise((resolve, reject) => {
+            const overtime_timer = setTimeout(() => {
+                this.netSocket.removeListener('error', reject);
+                this.netSocket.removeListener('data', reject);
+                reject(new Error('等待流信息超时'));
+            }, overtime);
             const resolve_callback = (data) => {
                 this.netSocket.removeListener('error', reject);
+                clearTimeout(overtime_timer);
                 resolve(data);
             };
-            this.netSocket.once('error', reject);
+            const reject_callback = (reason) => {
+                this.netSocket.removeListener('data', reject);
+                clearTimeout(overtime_timer);
+                reject(reason);
+            };
+            this.netSocket.once('error', reject_callback);
             this.netSocket.once('data', resolve_callback);
         });
     }
@@ -45,9 +56,9 @@ class TelnetSocket {
             return yield this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data));
         });
     }
-    readString() {
+    readString(overtime) {
         return __awaiter(this, void 0, void 0, function* () {
-            return (yield this.readBuffer()).toString();
+            return (yield this.readBuffer(overtime)).toString();
         });
     }
     readStringMatch(...avgs) {
@@ -69,24 +80,31 @@ class TelnetSocket {
             }
         });
     }
-    readUntil(find_str) {
+    readBufferUntil(find_str) {
         return __awaiter(this, void 0, void 0, function* () {
-            const find_bf = Buffer.from(find_str);
-            let new_bf = yield this.readBuffer();
-            let all_bf = new_bf;
-            while (!all_bf.includes(find_bf, find_bf.length * -2)) {
-                new_bf = yield this.readBuffer();
-                all_bf = Buffer.concat([all_bf, new_bf]);
+            const find_buf = Buffer.from(find_str);
+            let new_buf = yield this.readBuffer();
+            let all_buf = new_buf;
+            while (!all_buf.includes(find_buf, find_buf.length * -2)) {
+                new_buf = yield this.readBuffer();
+                all_buf = Buffer.concat([all_buf, new_buf]);
             }
-            return all_bf;
+            return all_buf;
+        });
+    }
+    readStringUntil(find_str) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const read_buf = yield this.readBufferUntil(find_str);
+            return read_buf.toString();
         });
     }
 }
 class TelnetServer {
-    constructor(port, callback) {
+    constructor(port, config, callback) {
         this.config = {
             showLog: false
         };
+        Object.assign(this.config, config);
         this.netServer = net.createServer((netSocket) => {
             this.config.showLog && console.log(`收到新的连接 ${netSocket.remoteAddress}:${netSocket.remotePort}`);
             netSocket.on('error', () => {
