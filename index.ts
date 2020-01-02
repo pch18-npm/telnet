@@ -4,6 +4,7 @@ class TelnetSocket {
     constructor(netSocket: TelnetSocket['netSocket']) {
         this.netSocket = netSocket
     }
+
     close() {
         this.netSocket.end()
         this.netSocket.removeAllListeners()
@@ -11,6 +12,7 @@ class TelnetSocket {
     wait(ms: number) {
         return new Promise<void>((resolve) => setTimeout(resolve, ms))
     }
+
     writeBuffer(data: Buffer) {
         return new Promise<void>((resolve, reject) => {
             const resolve_callback = (err?: Error) => {
@@ -21,6 +23,10 @@ class TelnetSocket {
             this.netSocket.write(data, resolve_callback)
         })
     }
+    async writeString(data: string, lineFeed = true) {
+        return await this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data))
+    }
+
     readBuffer(overtime = 10000) {
         return new Promise<Buffer>((resolve, reject) => {
             const overtime_timer = setTimeout(() => {
@@ -42,13 +48,10 @@ class TelnetSocket {
             this.netSocket.once('data', resolve_callback)
         })
     }
-    async writeString(data: string, lineFeed = true) {
-        return await this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data))
-    }
     async readString(overtime?: number) {
         return (await this.readBuffer(overtime)).toString()
     }
-    async readStringMatch(regExp: RegExp, getIndex: number, overtime?: number) {
+    async readStringMatch(regExp: RegExp, overtime?: number) {
         const str = await this.readString(overtime)
         const match = str.match(regExp)
         if (match) {
@@ -57,18 +60,18 @@ class TelnetSocket {
             throw new Error(`使用 /${regExp.source}/${regExp.flags} 匹配文本失败: ${str}`)
         }
     }
-    async readBufferUntil(find_str: string) {
+    async readBufferUntil(find_str: string, overtime?: number) {
         const find_buf = Buffer.from(find_str)
-        let new_buf = await this.readBuffer()
+        let new_buf = await this.readBuffer(overtime)
         let all_buf = new_buf
         while (!all_buf.includes(find_buf, find_buf.length * -2)) {
-            new_buf = await this.readBuffer()
+            new_buf = await this.readBuffer(overtime)
             all_buf = Buffer.concat([all_buf, new_buf]);
         }
         return all_buf
     }
-    async readStringUntil(find_str: string) {
-        const read_buf = await this.readBufferUntil(find_str)
+    async readStringUntil(find_str: string, overtime?: number) {
+        const read_buf = await this.readBufferUntil(find_str, overtime)
         return read_buf.toString()
     }
 

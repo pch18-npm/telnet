@@ -6,12 +6,12 @@ declare class TelnetSocket {
     close(): void;
     wait(ms: number): Promise<void>;
     writeBuffer(data: Buffer): Promise<void>;
-    readBuffer(overtime?: number): Promise<Buffer>;
     writeString(data: string, lineFeed?: boolean): Promise<void>;
+    readBuffer(overtime?: number): Promise<Buffer>;
     readString(overtime?: number): Promise<string>;
-    readStringMatch(regExp: RegExp, getIndex: number, overtime?: number): Promise<RegExpMatchArray>;
-    readBufferUntil(find_str: string): Promise<Buffer>;
-    readStringUntil(find_str: string): Promise<string>;
+    readStringMatch(regExp: RegExp, overtime?: number): Promise<RegExpMatchArray>;
+    readBufferUntil(find_str: string, overtime?: number): Promise<Buffer>;
+    readStringUntil(find_str: string, overtime?: number): Promise<string>;
 }
 export declare class TelnetServer {
     private netServer;

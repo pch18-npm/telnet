@@ -30,6 +30,11 @@ class TelnetSocket {
             this.netSocket.write(data, resolve_callback);
         });
     }
+    writeString(data, lineFeed = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data));
+        });
+    }
     readBuffer(overtime = 10000) {
         return new Promise((resolve, reject) => {
             const overtime_timer = setTimeout(() => {
@@ -51,17 +56,12 @@ class TelnetSocket {
             this.netSocket.once('data', resolve_callback);
         });
     }
-    writeString(data, lineFeed = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield this.writeBuffer(Buffer.from(lineFeed ? data + '\r\n' : data));
-        });
-    }
     readString(overtime) {
         return __awaiter(this, void 0, void 0, function* () {
             return (yield this.readBuffer(overtime)).toString();
         });
     }
-    readStringMatch(regExp, getIndex, overtime) {
+    readStringMatch(regExp, overtime) {
         return __awaiter(this, void 0, void 0, function* () {
             const str = yield this.readString(overtime);
             const match = str.match(regExp);
@@ -73,21 +73,21 @@ class TelnetSocket {
             }
         });
     }
-    readBufferUntil(find_str) {
+    readBufferUntil(find_str, overtime) {
         return __awaiter(this, void 0, void 0, function* () {
             const find_buf = Buffer.from(find_str);
-            let new_buf = yield this.readBuffer();
+            let new_buf = yield this.readBuffer(overtime);
             let all_buf = new_buf;
             while (!all_buf.includes(find_buf, find_buf.length * -2)) {
-                new_buf = yield this.readBuffer();
+                new_buf = yield this.readBuffer(overtime);
                 all_buf = Buffer.concat([all_buf, new_buf]);
             }
             return all_buf;
         });
     }
-    readStringUntil(find_str) {
+    readStringUntil(find_str, overtime) {
         return __awaiter(this, void 0, void 0, function* () {
-            const read_buf = yield this.readBufferUntil(find_str);
+            const read_buf = yield this.readBufferUntil(find_str, overtime);
             return read_buf.toString();
         });
     }
